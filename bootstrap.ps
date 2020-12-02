@@ -11,10 +11,15 @@ Set-Location -Path $path
 # =====================================================================
 # Keyboard Swiss
 # =====================================================================
+Write-Output "Setup Keyboard to Swiss"
 Set-WinUserLanguageList -LanguageList de-ch -Force
 
 # =====================================================================
 # Chocolaty
 # =====================================================================
+Write-Output "Invoke Chocolaty Installer"
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1’))
+
+
+Write-Output "FINISHED"
 

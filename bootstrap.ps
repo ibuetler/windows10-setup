@@ -1,8 +1,8 @@
 # =====================================================================
 # Windows 10 Setup
 # =====================================================================
-Write-Output "Create C:\hacker"
-$path = "C:\hacker"
+Write-Output "Create C:\hacker1"
+$path = "C:\hacker1"
 If(!(test-path $path))
 {
       New-Item -ItemType Directory -Force -Path $path
@@ -25,4 +25,5 @@ Write-Output "Invoke Chocolaty Installer"
 
 
 Write-Output "FINISHED"
+
 

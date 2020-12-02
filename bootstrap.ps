@@ -9,12 +9,12 @@ If(!(test-path $path))
 Set-Location -Path $path
 
 # =====================================================================
-# Chocolaty
-# =====================================================================
-# Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1’))
-
-# =====================================================================
 # Keyboard Swiss
 # =====================================================================
 Set-WinUserLanguageList -LanguageList de-ch -Force
+
+# =====================================================================
+# Chocolaty
+# =====================================================================
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1’))
 

@@ -1,11 +1,14 @@
 # =====================================================================
 # Windows 10 Setup
 # =====================================================================
+Write-Output "Create C:\hacker"
 $path = "C:\hacker"
 If(!(test-path $path))
 {
       New-Item -ItemType Directory -Force -Path $path
 }
+
+Write-Output "cd $path"
 Set-Location -Path $path
 
 # =====================================================================

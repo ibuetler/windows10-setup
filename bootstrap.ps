@@ -21,8 +21,20 @@ Set-WinUserLanguageList -LanguageList de-ch -Force
 # Chocolaty
 # =====================================================================
 Write-Output "Invoke Chocolaty Installer"
-# Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
+# =====================================================================
+# Installation Google Chrome, Firefox, VisualStudio Code 
+# =====================================================================
+choco install googlechrome firefox visualstudiocode -y
+
+# =====================================================================
+# Run as "hacker"
+# =====================================================================
+# $username = Read-Host "Please enter in a valid username "
+# $password = Read-Host "Please enter in a the account password " -AsSecureString
+# Start-Process -Credential (New-Object System.Management.Automation.PSCredential($username, $password)) -FilePath (${Env:CommonProgramFiles(x86)} + "\sample.exe") -ArgumentList "/PRODUCT:sample", "/VERSION:2.0", "/MODE:1"
+# Start-Process powershell.exe -Verb runAs
 
 Write-Output "FINISHED"
 

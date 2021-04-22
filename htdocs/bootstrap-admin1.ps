@@ -1,0 +1,154 @@
+# =====================================================================
+# Windows 10 Admin Setup
+# =====================================================================
+
+$path = "C:\compass\"
+
+# =====================================================================
+# Check for Admin Privileges
+# =====================================================================
+
+Write-Output "Checking for elevated permissions..."
+if(-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+	Write-Warning "Insufficient permissions to run this script. Open the PowerShell console as an administrator and run this script again."
+	Break
+}
+
+# =====================================================================
+# Start Notification
+# =====================================================================
+$title = "Compass Security"
+$message = "Setup 1/2 has been started"
+[reflection.assembly]::loadwithpartialname("System.Windows.Forms")
+[reflection.assembly]::loadwithpartialname("System.Drawing")
+$path1 = Get-Process -id $pid | Select-Object -ExpandProperty Path                   
+$icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path1)           
+$notify = new-object system.windows.forms.notifyicon
+$notify.icon = $icon
+$notify.visible = $true
+Try
+{
+	$notify.showballoontip(10,$title,$Message,[system.windows.forms.tooltipicon]::info) 
+	new-item "c:\notif_system.txt" -Type File -force  
+}
+Catch
+{}
+
+# =====================================================================
+# Create C:\compass
+# =====================================================================
+# $env:UserName
+Write-Output "Create C:\compass"
+$path = "C:\compass\"
+if(!(Test-Path $path))
+{
+      New-Item -ItemType Directory -Force -Path $path
+}
+Write-Output "cd $path"
+Set-Location -Path $path
+
+
+# =====================================================================
+# Download Compass Resource ZIP file
+# =====================================================================
+# Disabling progress bar improves speed
+$ProgressPreference = 'SilentlyContinue'
+$Url = 'https://win10-setup.idocker.hacking-lab.com/workplace.zip'
+$ZipFile = $path + $(Split-Path -Path $Url -Leaf)
+if(!(Test-Path $ZipFile))
+{
+        Write-Output "Download workplace.zip ~1.2GB"
+        Invoke-WebRequest -Uri $Url -OutFile $ZipFile
+        Write-Output "Extracting workplace.zip"
+        $ExtractShell = New-Object -ComObject Shell.Application
+        $Files = $ExtractShell.Namespace($ZipFile).Items()
+        $ExtractShell.NameSpace($path).CopyHere($Files)
+        Start-Process $path
+} else {
+        Write-Output "The $ZipFile is already downloaded. Will not download again"
+}
+
+
+
+# =====================================================================
+# Installation Chocolaty
+# =====================================================================
+Write-Output "Invoke Chocolaty Installer"
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+# =====================================================================
+# Installation Google Chrome, Firefox, VisualStudio Code using choco
+# =====================================================================
+choco install openssl grep md5sums git rsync -y
+
+
+# =====================================================================
+# Keyboard Language
+# =====================================================================
+Write-Output "Adding en-US and de-ch language"
+$LanguageList = Get-WinUserLanguageList
+$LanguageList.Add("en-US")
+$LanguageList.Add("de-ch")
+Set-WinUserLanguageList -LanguageList $LanguageList -Force
+
+# System Language
+Set-WinUILanguageOverride -Language en-US
+
+# =====================================================================
+# Installation Compass CA Certificates
+# =====================================================================
+Write-Output "Installation Compass Root-CA certificates"
+$ca1 = $path + "trusted-ca\compass-root-ca.cer"
+$ca2 = $path + "trusted-ca\compass_security_infrastructure_ca.crt"
+$ca3 = $path + "trusted-ca\compass-proxy-jona-ca.cer"
+$ca4 = $path + "trusted-ca\compass-proxy-bern-ca.cer"
+$ca5 = $path + "trusted-ca\compass-proxy-berlin-ca.cer"
+$ca6 = $path + "trusted-ca\compass-proxy-zurich-ca.cer"
+Import-Certificate -FilePath $ca1 -CertStoreLocation Cert:\LocalMachine\Root
+Import-Certificate -FilePath $ca2 -CertStoreLocation Cert:\LocalMachine\Root
+Import-Certificate -FilePath $ca3 -CertStoreLocation Cert:\LocalMachine\Root
+Import-Certificate -FilePath $ca4 -CertStoreLocation Cert:\LocalMachine\Root
+Import-Certificate -FilePath $ca5 -CertStoreLocation Cert:\LocalMachine\Root
+Import-Certificate -FilePath $ca6 -CertStoreLocation Cert:\LocalMachine\Root
+
+# =====================================================================
+# Installation HL Fonts
+# =====================================================================
+$Source      = $path + "fonts\hl\*"
+$Destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
+
+Get-ChildItem -Path $Source -Include '*.ttf','*.ttc','*.otf' -Recurse | ForEach {
+    if(-not(Test-Path -Path "C:\Windows\Fonts\$($_.Name)")) {
+        $Font = "$Source\$($_.Name)"
+        $Destination.CopyHere($Font,0x10)
+    }
+}
+
+
+$InstallLog = $path + "install.log"
+Write-Output "Setup 1 of 2 with admin done" | Out-File -FilePath $InstallLog
+
+# =====================================================================
+# End Notification
+# =====================================================================
+$title = "Compass Security"
+$message = "Setup 1/2 has been successfully finished"
+[reflection.assembly]::loadwithpartialname("System.Windows.Forms")
+[reflection.assembly]::loadwithpartialname("System.Drawing")
+$path2 = Get-Process -id $pid | Select-Object -ExpandProperty Path                   
+$icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path2)           
+$notify = new-object system.windows.forms.notifyicon
+$notify.icon = $icon
+$notify.visible = $true
+Try
+{
+        $notify.showballoontip(10,$title,$Message,[system.windows.forms.tooltipicon]::info) 
+        new-item "c:\notif_system.txt" -Type File -force  
+}
+Catch
+{}
+
+
+Write-Output "FINISHED"
+
+

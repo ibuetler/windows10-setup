@@ -1,0 +1,12 @@
+version: '3.6'
+services:
+
+  win10setup:
+    image: hackinglab/alpine-nginx:3.2
+    labels:
+      - "traefik.port=80"
+      - "traefik.frontend.rule=Host:win10-setup.idocker.hacking-lab.com"
+      - "traefik.protocol=http"
+    volumes:
+      - /opt/win10-setup/htdocs:/opt/www
+    restart: always

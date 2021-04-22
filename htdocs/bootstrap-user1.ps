@@ -1,0 +1,48 @@
+# =====================================================================
+# Windows 10 Setup
+# =====================================================================
+
+# =====================================================================
+# Setup Path
+$path = "C:\compass\"
+# =====================================================================
+
+function Start-Sleep($seconds) {
+    $doneDT = (Get-Date).AddSeconds($seconds)
+    while($doneDT -gt (Get-Date)) {
+        $secondsLeft = $doneDT.Subtract((Get-Date)).TotalSeconds
+        $percent = ($seconds - $secondsLeft) / $seconds * 100
+        Write-Progress -Activity "Sleeping" -Status "Sleeping..." -SecondsRemaining $secondsLeft -PercentComplete $percent
+        [System.Threading.Thread]::Sleep(500)
+    }
+    Write-Progress -Activity "Sleeping" -Status "Sleeping..." -SecondsRemaining 0 -Completed
+}
+
+# =====================================================================
+# Setup Proxy Switcher
+# =====================================================================
+Write-Output "Setup subst for r:\ and t:\"
+$ProxyPathSrc = $path + "startup\icontray.bat" 
+$ProxyPathDest = [Environment]::GetFolderPath('Startup')
+
+if(Test-Path -Path $ProxyPathSrc)
+{
+  if(Test-Path -Path $ProxyPathDest)
+  {
+        Write-Output "Copying from $ProxyPathSrc to $StartupPathDest"
+        Copy-Item -Path $ProxyPathSrc -Destination $ProxyPathDest -Force
+  } else {
+        Write-Output "$ProxyPathDestPathDest not found, ERROR"
+  }
+} else {
+  Write-Output "Cannot find $ProxyPathSrc"
+}
+
+
+Write-Output "FINISHED"
+
+Write-Output "Sign-out user in 15 seconds"
+Write-Output "Abort sign-out with CTRL-C"
+Start-Sleep -s 15
+logoff
+

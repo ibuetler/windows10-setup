@@ -1,0 +1,60 @@
+# =====================================================================
+# Windows 10 Admin Setup
+# =====================================================================
+
+$path = "C:\compass\"
+
+# =====================================================================
+# Check for Admin Privileges
+# =====================================================================
+
+Write-Output "Checking for elevated permissions..."
+if(-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+	Write-Warning "Insufficient permissions to run this script. Open the PowerShell console as an administrator and run this script again."
+	Break
+}
+
+# =====================================================================
+# Start Notification
+# =====================================================================
+$title = "Compass Security"
+$message = "Setup 1/2 has been started"
+[reflection.assembly]::loadwithpartialname("System.Windows.Forms")
+[reflection.assembly]::loadwithpartialname("System.Drawing")
+$path1 = Get-Process -id $pid | Select-Object -ExpandProperty Path                   
+$icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path1)           
+$notify = new-object system.windows.forms.notifyicon
+$notify.icon = $icon
+$notify.visible = $true
+Try
+{
+	$notify.showballoontip(10,$title,$Message,[system.windows.forms.tooltipicon]::info) 
+	new-item "c:\notif_system.txt" -Type File -force  
+}
+Catch
+{}
+
+
+# =====================================================================
+# Download Compass Resource ZIP file
+# =====================================================================
+# Disabling progress bar improves speed
+$ProgressPreference = 'SilentlyContinue'
+$Url = 'https://win10-setup.idocker.hacking-lab.com/workplace.zip'
+$ZipFile = $path + $(Split-Path -Path $Url -Leaf)
+if(!(Test-Path $ZipFile))
+{
+        Write-Output "Download workplace.zip ~400MB"
+        Invoke-WebRequest -Uri $Url -OutFile $ZipFile
+        Write-Output "Extracting workplace.zip"
+        $ExtractShell = New-Object -ComObject Shell.Application
+        $Files = $ExtractShell.Namespace($ZipFile).Items()
+        $ExtractShell.NameSpace($path).CopyHere($Files)
+        Start-Process $path
+} else {
+        Write-Output "The $ZipFile is already downloaded. Will not download again"
+}
+
+Write-Output "FINISHED"
+
+

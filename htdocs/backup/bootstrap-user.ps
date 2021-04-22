@@ -1,0 +1,253 @@
+# =====================================================================
+# Windows 10 Setup
+# =====================================================================
+
+# =====================================================================
+# Setup Path
+$path = "C:\compass\"
+# =====================================================================
+
+function Start-Sleep($seconds) {
+    $doneDT = (Get-Date).AddSeconds($seconds)
+    while($doneDT -gt (Get-Date)) {
+        $secondsLeft = $doneDT.Subtract((Get-Date)).TotalSeconds
+        $percent = ($seconds - $secondsLeft) / $seconds * 100
+        Write-Progress -Activity "Sleeping" -Status "Sleeping..." -SecondsRemaining $secondsLeft -PercentComplete $percent
+        [System.Threading.Thread]::Sleep(500)
+    }
+    Write-Progress -Activity "Sleeping" -Status "Sleeping..." -SecondsRemaining 0 -Completed
+}
+
+# =====================================================================
+# Check for Non-Admin Privileges
+# =====================================================================
+Write-Output "Checking for elevated permissions..."
+if(([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+        Write-Warning "Do not run this script as adminsitrator. Open the PowerShell console as an unprivileged (non-admin) user and run this script again."
+        Break
+}
+
+
+# =====================================================================
+# Check ifSetup 1/2 has been executed
+# =====================================================================
+$phase2 = $path + "install.log"
+Write-Output "$phase2"
+if(!(Test-Path -Path $phase2))
+{
+      Write-Output "ERROR Setup 2/2: Setup 1/2 has not yet been applied"
+      Write-Output "Please run Setup 1/2 first as local admin"
+      Break
+} else {
+      Write-Output "Setup 2 of 2 with non-admin done" | Out-File -FilePath $phase2 -Append
+}
+
+# =====================================================================
+# Start Notification
+# =====================================================================
+$title = "Compass Security"
+$message = "Setup 2/2 has been started"
+[reflection.assembly]::loadwithpartialname("System.Windows.Forms")
+[reflection.assembly]::loadwithpartialname("System.Drawing")
+$path1 = Get-Process -id $pid | Select-Object -ExpandProperty Path                   
+$icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path1)
+$notify = new-object system.windows.forms.notifyicon
+$notify.icon = $icon
+$notify.visible = $true
+Try
+{
+        $notify.showballoontip(10,$title,$Message,[system.windows.forms.tooltipicon]::info) 
+        new-item "c:\notif_system.txt" -Type File -force  
+}
+Catch
+{}
+
+# =====================================================================
+# Add Home and Compass Favorite in Explorer
+# =====================================================================
+$MyHome = $home + "\Links\" + $env:UserName + ".lnk"
+Write-Output "Create Link file $MyHome"
+$WshShell = New-Object -comObject Shell.Application
+$WshShell.Namespace($home).Self.InvokeVerb("pintohome")
+Write-Output "Create Link file $path"
+$WshShell = New-Object -comObject Shell.Application
+$WshShell.Namespace($path).Self.InvokeVerb("pintohome")
+
+# =====================================================================
+# Show File Extensions in Explorer
+# =====================================================================
+$key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+Set-ItemProperty $key Hidden 2
+Set-ItemProperty $key HideFileExt 0
+Set-ItemProperty $key ShowSuperHidden 0
+Stop-Process -processname explorer
+
+
+# =====================================================================
+# Copy OpenVPN into C:\Users\hacker\OpenVPN\config
+# =====================================================================
+$OpenvpnPathSrc = $path + "openvpn"
+$OpenvpnPathDest = $home + "\OpenVPN\config"
+Write-Output "$OpenvpnPathSrc"
+Write-Output "$OpenvpnPathDest"
+
+if(Test-Path -Path $OpenvpnPathSrc)
+{
+  if(Test-Path -Path $OpenvpnPathDest)
+  {
+        Write-Output "Copying OpenVPN profiles from $OpenvpnPathSrc to $OpenvpnPathDest"
+        Write-Output "Testing $OpenvpnPathSrc"
+        Test-Path -Path $OpenvpnPathSrc
+        Write-Output "Testing $OpenvpnPathDest"
+        Test-Path -Path $OpenvpnPathDest
+	Write-Output "Copying $OpenvpnPathSrc\* to $OpenvpnPathDest"
+        Copy-Item -Path $OpenvpnPathSrc\* -Destination $OpenvpnPathDest -Recurse -Force
+  } else {
+        Write-Output "$OpenvpnPathDest not found, will create folder"
+        New-Item -ItemType Directory -Path $OpenvpnPathDest -Force
+        Write-Output "Testing $OpenvpnPathSrc"
+        Test-Path -Path $OpenvpnPathSrc
+        Write-Output "Testing $OpenvpnPathDest"
+        Test-Path -Path $OpenvpnPathDest
+	Write-Output "Copying $OpenvpnPathSrc\* to $OpenvpnPathDest"
+        Copy-Item -Path $OpenvpnPathSrc\* -Destination $OpenvpnPathDest -Recurse -Force
+  }
+} else {
+  Write-Output "Cannot find $OpenvpnPathSrc"
+}
+
+Get-ChildItem $OpenvpnPathDest
+
+
+
+# =====================================================================
+# Keyboard Swiss
+# =====================================================================
+Write-Output "Setup Keyboard to Swiss"
+Set-WinUserLanguageList -LanguageList de-ch -Force
+
+
+# =====================================================================
+# Set Background Image
+# =====================================================================
+$WallpaperFile = $path + "wallpapers\compass_security_1920x1080_1.jpg"
+if(Test-Path -Path $WallpaperFile)
+{
+  Write-Output "Setup background image (please logout and login to refresh)"
+  Set-ItemProperty -Path "HKCU:Control Panel\Desktop" -name WallPaper -value $WallpaperFile
+} else {
+  Write-Output "wallpaper file $WallpaperFile not found"
+}
+
+
+# =====================================================================
+# Importing FireFox Profiles
+# =====================================================================
+$FirefoxSrc1 = $path + "\firefox-profiles-compass\Firefox\installs.ini"
+$FirefoxSrc2 = $path + "\firefox-profiles-compass\Firefox\profiles.ini"
+$FirefoxSrc3 = $path + "\firefox-profiles-compass\Firefox\Profiles\"
+$FirefoxPath = $env:APPDATA + "\Mozilla\Firefox\"
+Write-Output "Firefox: $FirefoxPath"
+if(Test-Path -Path $FirefoxPath)
+{
+  Remove-Item $FirefoxPath -Recurse  -ErrorAction Ignore
+  New-Item -ItemType Directory -Force -Path $FirefoxPath
+  Write-Output "Copying Firefox Profiles"
+  Copy-Item -Path $FireFoxSrc1 -Destination $FirefoxPath -Force
+  Copy-Item -Path $FireFoxSrc2 -Destination $FirefoxPath -Force
+  Copy-Item -Path $FireFoxSrc3 -Destination $FirefoxPath -recurse -Force
+} else {
+  Write-Output "$FirefoxPath not found - will create $FirefoxPath"
+  New-Item -ItemType Directory -Force -Path $FirefoxPath
+  Write-Output "Copying Firefox Profiles"
+  Copy-Item -Path $FireFoxSrc1 -Destination $FirefoxPath -Force
+  Copy-Item -Path $FireFoxSrc2 -Destination $FirefoxPath -Force
+  Copy-Item -Path $FireFoxSrc3 -Destination $FirefoxPath -recurse -Force
+}
+
+# =====================================================================
+# Importing Google Chrome 
+# =====================================================================
+$ChromeExtSrc  = $path + "\google\"
+$ChromeExtPath = $env:LOCALAPPDATA + "\Google\Chrome\User Data\"
+Write-Output "Google Chrome Extensions: $ChromeExtPath"
+if(Test-Path -Path $ChromeExtPath)
+{
+  Write-Output "Copying Chrome Extenions" 
+  Copy-Item -Path $ChromeExtSrc\* -Destination $ChromeExtPath -recurse -Force
+} else {
+  Write-Output "$ChromeExtPath not found - will create $ChromeExtPath"
+  New-Item -ItemType Directory -Force -Path $ChromeExtPath
+  Write-Output "Copying Chrome Extensions"
+  Copy-Item -Path $ChromeExtSrc\* -Destination $ChromeExtPath -recurse -Force
+}
+
+
+# =====================================================================
+# Importing Visual Studio Code Extensions
+# =====================================================================
+$VscodeSrc1 = $path + "\.vscode\"
+$VscodePath = $home 
+Write-Output "VisualStudioCode: $VscodePath"
+if(Test-Path -Path $VscodePath)
+{
+  Remove-Item $VscodePath -Recurse  -ErrorAction Ignore
+  New-Item -ItemType Directory -Force -Path $VscodePath
+  Write-Output "Copying .vscode extensions"
+  Copy-Item -Path $VscodeSrc1 -Destination $VscodePath -recurse -Force
+} else {
+  Write-Output "$VscodePath not found - will create $VscodePath"
+  New-Item -ItemType Directory -Force -Path $VscodePath
+  Write-Output "Copying .vscode extensions"
+  Copy-Item -Path $VscodeSrc1 -Destination $VscodePath -recurse -Force
+}
+
+
+# =====================================================================
+# Copying compass-setup.md and compass-setup.pdf to Desktop
+# =====================================================================
+$DocumentsSrc1 = $path + "\Documents\"
+$DocumentsPath = $home + "\Desktop\" 
+Write-Output "VisualStudioCode: $DocumentsPath"
+if(Test-Path -Path $DocumentsPath)
+{
+  Write-Output "Copying files to user Desktop"
+  Copy-Item -Path $DocumentsSrc1\* -Destination $DocumentsPath -recurse -Force
+} 
+
+
+
+# =====================================================================
+# End Notification
+# =====================================================================
+$title = "Compass Security"
+$message = "Setup 2/2 has been successfully finished"
+[reflection.assembly]::loadwithpartialname("System.Windows.Forms")
+[reflection.assembly]::loadwithpartialname("System.Drawing")
+$path2 = Get-Process -id $pid | Select-Object -ExpandProperty Path                   
+$icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path2)           
+$notify = new-object system.windows.forms.notifyicon
+$notify.icon = $icon
+$notify.visible = $true
+Try
+{
+        $notify.showballoontip(10,$title,$Message,[system.windows.forms.tooltipicon]::info) 
+        new-item "c:\notif_system.txt" -Type File -force  
+}
+Catch
+{}
+
+# =====================================================================
+# Clear Trash
+# =====================================================================
+(New-Object -ComObject Shell.Application).NameSpace(0x0a).Items() | ForEach-Object {
+        Remove-Item -LiteralPath $_.Path -Force -Recurse
+}
+
+Write-Output "FINISHED"
+
+Write-Output "Sign-out user in 15 seconds"
+Write-Output "Abort sign-out with CTRL-C"
+Start-Sleep -s 15
+logoff
+
